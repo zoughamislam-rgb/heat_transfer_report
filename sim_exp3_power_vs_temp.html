@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Experiment 3 – Power vs Surface Temperature</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f5f7fa;color:#1a1a2e;padding:16px}
+h1{font-size:20px;font-weight:700;color:#1F4E79;margin-bottom:4px}
+.sub{font-size:13px;color:#555;margin-bottom:18px}
+.info-box{background:#EBF4FC;border-left:4px solid #2E75B6;border-radius:0 8px 8px 0;padding:10px 14px;font-size:13px;color:#1F4E79;margin-bottom:16px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.card{background:#fff;border-radius:10px;border:1px solid #dde3ed;padding:12px 14px}
+.card-label{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.4px;margin-bottom:2px}
+.card-val{font-size:20px;font-weight:700}
+.card-val.fn{color:#1D9E75}.card-val.pn{color:#378ADD}.card-val.eq{color:#E24B4A}
+.chart-wrap{background:#fff;border-radius:10px;border:1px solid #dde3ed;padding:16px;margin-bottom:20px}
+.chart-title{font-size:14px;font-weight:600;color:#333;margin-bottom:12px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-bottom:12px}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:12px;color:#555}
+.leg-dot{width:14px;height:4px;border-radius:2px}
+.controls{background:#fff;border-radius:10px;border:1px solid #dde3ed;padding:14px 16px;margin-bottom:20px}
+.ctrl-title{font-size:14px;font-weight:600;color:#333;margin-bottom:10px}
+.ctrl-row{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.ctrl-row label{font-size:13px;color:#555;min-width:120px}
+input[type=range]{flex:1;accent-color:#1F4E79}
+.ctrl-val{font-size:14px;font-weight:700;min-width:60px}
+.cv-fn{color:#1D9E75}.cv-pn{color:#378ADD}
+.readout{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.readout-card{background:#fff;border-radius:10px;border:2px solid #dde3ed;padding:14px}
+.readout-card.fn-border{border-color:#1D9E75}
+.readout-card.pn-border{border-color:#378ADD}
+.readout-title{font-size:13px;font-weight:600;margin-bottom:10px}
+.readout-title.fn{color:#1D9E75}.readout-title.pn{color:#378ADD}
+.readout-row{display:flex;justify-content:space-between;font-size:13px;color:#555;margin:5px 0;border-bottom:1px solid #f0f0f0;padding-bottom:5px}
+.readout-val{font-weight:600;color:#333}
+.section-title{font-size:14px;font-weight:600;color:#1F4E79;margin:0 0 10px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px}
+th{background:#1F4E79;color:#fff;padding:7px 10px;text-align:center}
+td{padding:6px 10px;text-align:center;border-bottom:1px solid #eee}
+tr:nth-child(even) td{background:#f0f5fb}
+.highlight{background:#FFF3CD!important;font-weight:700}
+.formula-box{background:#f0f5fb;border-radius:8px;padding:12px 16px;font-size:13px;color:#1F4E79;margin-bottom:16px;font-family:monospace;text-align:center}
+</style>
+</head>
+<body>
+<h1>Experiment 3 – Relationship Between Power Input and Surface Temperature</h1>
+<p class="sub">Finned and Pinned surfaces only. Use the sliders to explore how power and temperature relate.</p>
+
+<div class="info-box">
+  At steady state: <strong>Q = h · A · ΔT</strong>, so <strong>ΔT = Q / (h·A)</strong>. The plot of Q vs ΔT is linear — its slope equals h·A.
+</div>
+
+<div class="formula-box">
+  Finned: slope = Q/ΔT ≈ 0.556 W/°C  →  h = 0.556 / 0.092 ≈ 6.04 W/m²K<br>
+  Pinned: slope = Q/ΔT ≈ 0.640 W/°C  →  h = 0.640 / 0.027 ≈ 23.7 W/m²K
+</div>
+
+<div class="controls">
+  <div class="ctrl-title">Set power to see predicted steady-state temperatures</div>
+  <div class="ctrl-row">
+    <label>Finned power</label>
+    <input type="range" id="fnPower" min="0" max="60" value="15" step="1">
+    <span class="ctrl-val cv-fn" id="fnPowerVal">15 W</span>
+  </div>
+  <div class="ctrl-row">
+    <label>Pinned power</label>
+    <input type="range" id="pnPower" min="0" max="60" value="15" step="1">
+    <span class="ctrl-val cv-pn" id="pnPowerVal">15 W</span>
+  </div>
+</div>
+
+<div class="readout">
+  <div class="readout-card fn-border">
+    <div class="readout-title fn">Finned Surface  (A = 0.092 m²)</div>
+    <div class="readout-row"><span>Power input Q</span><span class="readout-val" id="fn-Q">15 W</span></div>
+    <div class="readout-row"><span>Surface temp Ts</span><span class="readout-val" id="fn-Ts">53.1°C</span></div>
+    <div class="readout-row"><span>Ambient TIN</span><span class="readout-val">~25.3°C</span></div>
+    <div class="readout-row"><span>ΔT = Ts − TIN</span><span class="readout-val" id="fn-dT">27.8°C</span></div>
+    <div class="readout-row"><span>h (W/m²K)</span><span class="readout-val" id="fn-hVal">5.44</span></div>
+  </div>
+  <div class="readout-card pn-border">
+    <div class="readout-title pn">Pinned Surface  (A = 0.027 m²)</div>
+    <div class="readout-row"><span>Power input Q</span><span class="readout-val" id="pn-Q">15 W</span></div>
+    <div class="readout-row"><span>Surface temp Ts</span><span class="readout-val" id="pn-Ts">49.9°C</span></div>
+    <div class="readout-row"><span>Ambient TIN</span><span class="readout-val">~24.2°C</span></div>
+    <div class="readout-row"><span>ΔT = Ts − TIN</span><span class="readout-val" id="pn-dT">25.7°C</span></div>
+    <div class="readout-row"><span>h (W/m²K)</span><span class="readout-val" id="pn-hVal">21.7</span></div>
+  </div>
+</div>
+
+<div class="chart-wrap">
+  <div class="chart-title">Q vs ΔT (temperature difference) — measured data + best-fit line</div>
+  <div class="legend">
+    <div class="leg-item"><div class="leg-dot" style="background:#1D9E75"></div>Finned (measured)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#1D9E75;border-top:2px dashed #1D9E75"></div>Finned (fit)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#378ADD"></div>Pinned (measured)</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#378ADD;border-top:2px dashed #378ADD"></div>Pinned (fit)</div>
+  </div>
+  <div style="position:relative;height:300px"><canvas id="qdtChart" role="img" aria-label="Scatter plot of power vs temperature difference for finned and pinned surfaces"></canvas></div>
+</div>
+
+<div class="chart-wrap">
+  <div class="chart-title">Surface temperature vs power — measured data</div>
+  <div class="legend">
+    <div class="leg-item"><div class="leg-dot" style="background:#1D9E75"></div>Finned</div>
+    <div class="leg-item"><div class="leg-dot" style="background:#378ADD"></div>Pinned</div>
+  </div>
+  <div style="position:relative;height:280px"><canvas id="tpChart" role="img" aria-label="Line chart of surface temperature vs power"></canvas></div>
+</div>
+
+<div class="section-title">Experimental data – Finned Surface</div>
+<table id="fnTable">
+  <thead><tr><th>Power (W)</th><th>Ts (°C)</th><th>TIN (°C)</th><th>ΔT (°C)</th><th>h (W/m²K)</th></tr></thead>
+  <tbody>
+    <tr><td>0</td><td>25.4</td><td>25.4</td><td>0.0</td><td>—</td></tr>
+    <tr><td>10</td><td>46.7</td><td>25.4</td><td>21.3</td><td>5.09</td></tr>
+    <tr><td>20</td><td>64.9</td><td>25.2</td><td>39.7</td><td>5.47</td></tr>
+    <tr><td>30</td><td>81.0</td><td>24.8</td><td>56.2</td><td>5.80</td></tr>
+    <tr><td>40</td><td>97.1</td><td>25.1</td><td>72.0</td><td>6.04</td></tr>
+  </tbody>
+</table>
+
+<div class="section-title">Experimental data – Pinned Surface</div>
+<table id="pnTable">
+  <thead><tr><th>Power (W)</th><th>Ts (°C)</th><th>TIN (°C)</th><th>ΔT (°C)</th><th>h (W/m²K)</th></tr></thead>
+  <tbody>
+    <tr><td>0</td><td>24.4</td><td>24.4</td><td>0.0</td><td>—</td></tr>
+    <tr><td>10</td><td>45.3</td><td>24.4</td><td>20.9</td><td>17.7</td></tr>
+    <tr><td>20</td><td>58.0</td><td>24.6</td><td>33.4</td><td>22.1</td></tr>
+    <tr><td>30</td><td>73.0</td><td>23.6</td><td>49.4</td><td>22.5</td></tr>
+    <tr><td>40</td><td>86.5</td><td>24.0</td><td>62.5</td><td>23.7</td></tr>
+  </tbody>
+</table>
+
+<script>
+const fnData={
+  powers:[0,10,20,30,40],
+  ts:[25.4,46.7,64.9,81.0,97.1],
+  tin:[25.4,25.4,25.2,24.8,25.1]
+};
+const pnData={
+  powers:[0,10,20,30,40],
+  ts:[24.4,45.3,58.0,73.0,86.5],
+  tin:[24.4,24.4,24.6,23.6,24.0]
+};
+const fnDTs=fnData.ts.map((v,i)=>+(v-fnData.tin[i]).toFixed(1));
+const pnDTs=pnData.ts.map((v,i)=>+(v-pnData.tin[i]).toFixed(1));
+
+const AFn=0.092,APn=0.027;
+const hFn=6.04,hPn=23.7;
+const TambFn=25.3,TambPn=24.2;
+
+const qdtCtx=document.getElementById('qdtChart').getContext('2d');
+const qdtChart=new Chart(qdtCtx,{
+  type:'scatter',
+  data:{
+    datasets:[
+      {label:'Finned (measured)',data:fnDTs.map((dt,i)=>({x:dt,y:fnData.powers[i]})),
+       backgroundColor:'rgba(29,158,117,.8)',borderColor:'#1D9E75',pointRadius:7,pointStyle:'circle',showLine:false},
+      {label:'Finned (fit)',data:[{x:0,y:0},{x:80,y:80*AFn*hFn}],
+       borderColor:'#1D9E75',backgroundColor:'transparent',borderDash:[6,4],pointRadius:0,showLine:true,tension:0},
+      {label:'Pinned (measured)',data:pnDTs.map((dt,i)=>({x:dt,y:pnData.powers[i]})),
+       backgroundColor:'rgba(55,138,221,.8)',borderColor:'#378ADD',pointRadius:7,pointStyle:'rectRot',showLine:false},
+      {label:'Pinned (fit)',data:[{x:0,y:0},{x:70,y:70*APn*hPn}],
+       borderColor:'#378ADD',backgroundColor:'transparent',borderDash:[6,4],pointRadius:0,showLine:true,tension:0},
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{title:{display:true,text:'ΔT = Ts − TIN (°C)',font:{size:12}},min:0,max:80,grid:{color:'rgba(0,0,0,.05)'}},
+      y:{title:{display:true,text:'Power Q (W)',font:{size:12}},min:0,max:45,grid:{color:'rgba(0,0,0,.05)'}}
+    }
+  }
+});
+
+const tpCtx=document.getElementById('tpChart').getContext('2d');
+new Chart(tpCtx,{
+  type:'line',
+  data:{
+    labels:[0,10,20,30,40],
+    datasets:[
+      {label:'Finned Ts',data:fnData.ts,borderColor:'#1D9E75',backgroundColor:'rgba(29,158,117,.1)',fill:true,tension:0.3,pointRadius:6,pointStyle:'circle',borderWidth:2.5},
+      {label:'Pinned Ts',data:pnData.ts,borderColor:'#378ADD',backgroundColor:'rgba(55,138,221,.1)',fill:true,tension:0.3,pointRadius:6,pointStyle:'rectRot',borderWidth:2.5}
+    ]
+  },
+  options:{responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false}},
+    scales:{
+      x:{title:{display:true,text:'Power Q (W)',font:{size:12}},grid:{color:'rgba(0,0,0,.05)'}},
+      y:{title:{display:true,text:'Surface Temperature Ts (°C)',font:{size:12}},min:15,max:105,grid:{color:'rgba(0,0,0,.05)'}}
+    }
+  }
+});
+
+document.getElementById('fnPower').addEventListener('input',function(){
+  const Q=parseInt(this.value);
+  document.getElementById('fnPowerVal').textContent=Q+' W';
+  const dT=Q/(hFn*AFn);
+  const Ts=(TambFn+dT).toFixed(1);
+  document.getElementById('fn-Q').textContent=Q+' W';
+  document.getElementById('fn-Ts').textContent=Ts+'°C';
+  document.getElementById('fn-dT').textContent=dT.toFixed(1)+'°C';
+  document.getElementById('fn-hVal').textContent=Q>0?(Q/(AFn*dT)).toFixed(2):'—';
+});
+
+document.getElementById('pnPower').addEventListener('input',function(){
+  const Q=parseInt(this.value);
+  document.getElementById('pnPowerVal').textContent=Q+' W';
+  const dT=Q/(hPn*APn);
+  const Ts=(TambPn+dT).toFixed(1);
+  document.getElementById('pn-Q').textContent=Q+' W';
+  document.getElementById('pn-Ts').textContent=Ts+'°C';
+  document.getElementById('pn-dT').textContent=dT.toFixed(1)+'°C';
+  document.getElementById('pn-hVal').textContent=Q>0?(Q/(APn*dT)).toFixed(2):'—';
+});
+</script>
+</body>
+</html>
